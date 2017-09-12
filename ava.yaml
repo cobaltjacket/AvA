@@ -1,0 +1,55 @@
+# ava - Ansible via Ansible
+# jph@cobaltjacket.com
+# 2017-09-11
+
+# Configure system prerequisites
+---
+- hosts: all
+  become: true
+  vars:
+    PROJECT_HOME: "./ansible_test"
+    ansible_python_interpreter: "/usr/bin/python3"
+  tasks:
+    - name: Update apt-cache
+      apt: update_cache=yes
+    - name: Install virtualenv
+      apt:
+        name: virtualenv
+        state: present
+    - name: Install gcc
+      apt:
+        name: gcc
+        state: present
+    - name: Install Python 3.x development environment
+      apt:
+        name: python3-dev
+        state: present
+
+# Configure virtualenv
+
+- hosts: all
+  vars:
+    PROJECT_HOME: "./ansible_test"
+    ansible_python_interpreter: "/usr/bin/python3"
+  tasks:
+    - name: Create virtualenv for ansible
+      shell: virtualenv --python=python3 "{{ PROJECT_HOME }}"
+             creates="{{ PROJECT_HOME }}/bin/activate"
+    - name: Copy virtualenv wrapper
+      synchronize: src=pyvenv
+                   dest="{{ PROJECT_HOME }}/bin/pyvenv"
+
+# Install Ansible within virtualenv
+
+- hosts: all
+  vars:
+    PROJECT_HOME: "./ansible_test"
+    ansible_python_interpreter: "./ansible_test/bin/pyvenv"
+  tasks:
+    - name: "Guard code, so we are more certain we are in a virtualenv"
+      shell: echo $VIRTUAL_ENV
+      register: command_result
+      failed_when: command_result.stdout == ""
+    - name: "Install ansible in virtualenv"
+      shell: pip install ansible
+
